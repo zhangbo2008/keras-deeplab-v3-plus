@@ -1,3 +1,15 @@
+
+
+运行main.py即可.
+
+
+
+
+
+
+
+
+
 # Keras implementation of Deeplabv3+
 DeepLab is a state-of-art deep learning model for semantic image segmentation.  
 

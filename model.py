@@ -74,7 +74,7 @@ def SepConv_BN(x, filters, prefix, stride=1, kernel_size=3, rate=1, depth_activa
 
     if not depth_activation:
         x = Activation('relu')(x)
-    x = DepthwiseConv2D((kernel_size, kernel_size), strides=(stride, stride), dilation_rate=(rate, rate),
+    x = DepthwiseConv2D((kernel_size, kernel_size), strides=(stride, stride), dilation_rate=(rate, rate),#这是2种在移动端经常使用的,一个depth wise 一个叫point wise
                         padding=depth_padding, use_bias=False, name=prefix + '_depthwise')(x)
     x = BatchNormalization(name=prefix + '_depthwise_BN', epsilon=epsilon)(x)
     if depth_activation:
@@ -135,7 +135,7 @@ def _xception_block(inputs, depth_list, prefix, skip_connection_type, stride,
             """
     residual = inputs
     for i in range(3):
-        residual = SepConv_BN(residual,
+        residual = SepConv_BN(residual,#一种新的conv网络
                               depth_list[i],
                               prefix + '_separable_conv{}'.format(i + 1),
                               stride=stride if i == 2 else 1,
@@ -435,11 +435,11 @@ def Deeplabv3(weights='pascal_voc', input_tensor=None, input_shape=(512, 512, 3)
     if (weights == 'pascal_voc' and classes == 21) or (weights == 'cityscapes' and classes == 19):
         last_layer_name = 'logits_semantic'
     else:
-        last_layer_name = 'custom_logits_semantic'
+        last_layer_name = 'custom_logits_semantic'#最后一层改变数量即可.
 
     x = Conv2D(classes, (1, 1), padding='same', name=last_layer_name)(x)
     size_before3 = tf.keras.backend.int_shape(img_input)
-    x = Lambda(lambda xx: tf.compat.v1.image.resize(xx,
+    x = Lambda(lambda xx: tf.compat.v1.image.resize(xx,#利用这行代码变换回之前的size
                                                     size_before3[1:3],
                                                     method='bilinear', align_corners=True))(x)
 
@@ -454,7 +454,7 @@ def Deeplabv3(weights='pascal_voc', input_tensor=None, input_shape=(512, 512, 3)
         x = tf.keras.layers.Activation(activation)(x)
 
     model = Model(inputs, x, name='deeplabv3plus')
-
+    #最后是一个类似分类模型.输出19个512,512的图片.每一个图片表示一个遮罩图.
     # load weights
 
     if weights == 'pascal_voc':
@@ -468,14 +468,16 @@ def Deeplabv3(weights='pascal_voc', input_tensor=None, input_shape=(512, 512, 3)
                                     cache_subdir='models')
         model.load_weights(weights_path, by_name=True)
     elif weights == 'cityscapes':
-        if backbone == 'xception':
+        if backbone == 'xception':#下行的cache_subdir必须写绝对路径.
             weights_path = get_file('deeplabv3_xception_tf_dim_ordering_tf_kernels_cityscapes.h5',
                                     WEIGHTS_PATH_X_CS,
-                                    cache_subdir='models')
+                                    cache_dir='models',#表示文件夹所在的地方
+                                    cache_subdir='.')#表示没有下一级文件夹
         else:
             weights_path = get_file('deeplabv3_mobilenetv2_tf_dim_ordering_tf_kernels_cityscapes.h5',
                                     WEIGHTS_PATH_MOBILE_CS,
-                                    cache_subdir='models')
+                                    cache_dir='models',  # 表示文件夹所在的地方
+                                    cache_subdir='.')
         model.load_weights(weights_path, by_name=True)
     return model
 
